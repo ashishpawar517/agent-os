@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>agent-os</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; max-width: 1000px; }
+      .row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+      input[type="text"], input[type="number"] { min-width: 320px; padding: 8px; }
+      button { padding: 8px 12px; cursor: pointer; }
+      .panel { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-top: 12px; }
+      .muted { color: #666; }
+      .agent { border-top: 1px solid #eee; padding: 8px 0; }
+      code { background: #f7f7f7; padding: 1px 4px; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <h1>agent-os</h1>
+    <p class="muted">
+      Master-agent orchestration with unlimited sub-agent fan-out and plug-and-play tools.
+    </p>
+
+    <div class="panel">
+      <div class="row">
+        <label for="prompt"><strong>Prompt</strong></label>
+        <input id="prompt" type="text" placeholder="Describe the task..." />
+      </div>
+      <div class="row">
+        <label for="agentCount"><strong>Sub-agents</strong></label>
+        <input id="agentCount" type="number" min="1" value="3" />
+        <span class="muted">(No hard cap enforced)</span>
+      </div>
+      <div class="row">
+        <strong>Tools (plug-and-play):</strong>
+        <label><input id="toolBrowser" type="checkbox" checked /> browser</label>
+        <label><input id="toolCalls" type="checkbox" checked /> tool-calls</label>
+      </div>
+      <button id="start">Start Task</button>
+    </div>
+
+    <div class="panel">
+      <h3>Task Progress</h3>
+      <div id="status" class="muted">Idle</div>
+      <div id="agents"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Final Results</h3>
+      <pre id="results" class="muted">No results yet.</pre>
+    </div>
+
+    <script>
+      class ToolRegistry {
+        constructor() { this.tools = new Map(); }
+        register(name, execute) { this.tools.set(name, execute); }
+        async run(name, context) {
+          if (!this.tools.has(name)) return "skipped";
+          return this.tools.get(name)(context);
+        }
+      }
+
+      class MasterAgent {
+        constructor(registry) { this.registry = registry; }
+        async run({ prompt, agentCount, enabledTools, onUpdate }) {
+          const results = [];
+          onUpdate({ type: "task", state: "running", prompt, totalAgents: agentCount });
+          const workers = Array.from({ length: agentCount }, (_, i) => this.runSubAgent(i + 1, prompt, enabledTools, onUpdate));
+          for (const task of workers) results.push(await task);
+          onUpdate({ type: "task", state: "completed", prompt, totalAgents: agentCount, results });
+          return results;
+        }
+        async runSubAgent(id, prompt, enabledTools, onUpdate) {
+          onUpdate({ type: "agent", id, state: "running", detail: "started" });
+          await new Promise((r) => setTimeout(r, 150 + (id % 5) * 80));
+          const browserResult = enabledTools.browser ? await this.registry.run("browser", { id, prompt }) : "disabled";
+          const toolResult = enabledTools.toolCalls ? await this.registry.run("tool-calls", { id, prompt }) : "disabled";
+          const result = `agent-${id}: done | browser=${browserResult} | tool-calls=${toolResult}`;
+          onUpdate({ type: "agent", id, state: "completed", detail: result });
+          return result;
+        }
+      }
+
+      const registry = new ToolRegistry();
+      registry.register("browser", async ({ id }) => {
+        if (id === 1) window.open("about:blank", "_blank", "noopener,noreferrer,width=480,height=320");
+        return "opened-window";
+      });
+      registry.register("tool-calls", async ({ id, prompt }) => `executed(${id}): ${prompt.slice(0, 24)}`);
+
+      const master = new MasterAgent(registry);
+      const promptEl = document.getElementById("prompt");
+      const countEl = document.getElementById("agentCount");
+      const browserEl = document.getElementById("toolBrowser");
+      const callsEl = document.getElementById("toolCalls");
+      const statusEl = document.getElementById("status");
+      const agentsEl = document.getElementById("agents");
+      const resultsEl = document.getElementById("results");
+
+      function renderAgent(id, state, detail) {
+        const key = `agent-${id}`;
+        let row = document.getElementById(key);
+        if (!row) {
+          row = document.createElement("div");
+          row.id = key;
+          row.className = "agent";
+          agentsEl.appendChild(row);
+        }
+        row.innerHTML = `<strong>${key}</strong> — <code>${state}</code> ${detail ? `• ${detail}` : ""}`;
+      }
+
+      document.getElementById("start").addEventListener("click", async () => {
+        const prompt = promptEl.value.trim();
+        const agentCount = Number(countEl.value);
+        if (!prompt) {
+          statusEl.textContent = "Please enter a prompt.";
+          return;
+        }
+        if (!Number.isFinite(agentCount) || agentCount < 1) {
+          statusEl.textContent = "Agent count must be a number >= 1.";
+          return;
+        }
+
+        statusEl.textContent = "Starting task...";
+        agentsEl.innerHTML = "";
+        resultsEl.textContent = "Running...";
+
+        const results = await master.run({
+          prompt,
+          agentCount,
+          enabledTools: { browser: browserEl.checked, toolCalls: callsEl.checked },
+          onUpdate(update) {
+            if (update.type === "task") {
+              statusEl.textContent = update.state === "running"
+                ? `Running prompt "${update.prompt}" with ${update.totalAgents} sub-agents...`
+                : `Completed prompt "${update.prompt}" with ${update.totalAgents} sub-agents.`;
+            } else if (update.type === "agent") {
+              renderAgent(update.id, update.state, update.detail);
+            }
+          }
+        });
+
+        resultsEl.textContent = results.join("\n");
+      });
+    </script>
+  </body>
+</html>
