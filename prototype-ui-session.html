@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent OS UI/Session Model Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+            background-color: #000;
+            color: #fff;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100%;
+        }
+
+        /* Sidebar with tabs */
+        .sidebar {
+            width: 60px;
+            background-color: #1a1a1a;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            padding: 10px 0;
+            gap: 5px;
+        }
+
+        .tab-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background-color: #2d2d2d;
+            border: none;
+            color: #888;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tab-button:hover {
+            background-color: #3d3d3d;
+            color: #fff;
+        }
+
+        .tab-button.active {
+            background-color: #0066ff;
+            color: #fff;
+        }
+
+        .tab-button.new-tab {
+            background-color: #1a1a1a;
+            border: 1px dashed #555;
+            color: #555;
+        }
+
+        .tab-button.new-tab:hover {
+            background-color: #2d2d2d;
+        }
+
+        /* Main content area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Tab bar */
+        .tab-bar {
+            height: 40px;
+            background-color: #1a1a1a;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            gap: 10px;
+            overflow-x: auto;
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #2d2d2d;
+            border-radius: 6px;
+            padding: 4px 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .tab:hover:not(.active) {
+            background-color: #3d3d3d;
+        }
+
+        .tab.active {
+            background-color: #0066ff;
+        }
+
+        .tab-title {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .tab-type {
+            font-size: 11px;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            padding: 1px 4px;
+        }
+
+        .tab-close {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
+        .tab-close:hover {
+            background-color: rgba(255,0,0,0.5);
+        }
+
+        /* Status bar */
+        .status-bar {
+            height: 28px;
+            background-color: #1a1a1a;
+            border-top: 1px solid #333;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            font-size: 12px;
+            color: #888;
+            gap: 20px;
+        }
+
+        /* Tab content area */
+        .tab-content {
+            flex: 1;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        /* Individual tab panels */
+        .tab-panel {
+            display: none;
+            height: 100%;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* Terminal output */
+        .terminal-output {
+            background-color: #000;
+            color: #fff;
+            font-family: inherit;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            height: calc(100% - 40px);
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            overflow-y: auto;
+        }
+
+        /* Terminal input */
+        .terminal-input {
+            display: flex;
+            margin-top: 10px;
+            gap: 10px;
+        }
+
+        .terminal-input input {
+            flex: 1;
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        .terminal-input button {
+            background-color: #0066ff;
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .terminal-input button:hover {
+            background-color: #0052cc;
+        }
+
+        /* Browser iframe */
+        .browser-frame {
+            width: 100%;
+            height: calc(100% - 40px);
+            border: 1px solid #333;
+            border-radius: 4px;
+        }
+
+        /* Agent output styling */
+        .agent-output {
+            margin: 10px 0;
+            padding: 12px;
+            background-color: rgba(0,102,255,0.1);
+            border-left: 3px solid #0066ff;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .agent-output h4 {
+            margin: 0 0 8px 0;
+            color: #0066ff;
+            font-size: 14px;
+        }
+
+        .agent-output pre {
+            margin: 0;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+
+        /* Welcome screen */
+        .welcome-screen {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        .welcome-screen h2 {
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .welcome-screen p {
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .welcome-screen .btn {
+            display: inline-block;
+            background-color: #0066ff;
+            color: #fff;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 0 10px;
+            transition: background-color 0.2s;
+        }
+
+        .welcome-screen .btn:hover {
+            background-color: #0052cc;
+        }
+
+        /* New task button */
+        .new-task-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #0066ff;
+            color: #fff;
+            border: none;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,102,255,0.3);
+            transition: all 0.2s ease;
+        }
+
+        .new-task-btn:hover {
+            background-color: #0052cc;
+            transform: scale(1.05);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-panel {
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <button class="tab-button active" title="Agent Chat" aria-label="Agent Chat">
+                🤖
+            </button>
+            <button class="tab-button" title="Tools" aria-label="Tools">
+                🔧
+            </button>
+            <button class="tab-button" title="Memory" aria-label="Memory">
+                🧠
+            </button>
+            <button class="tab-button" title="Settings" aria-label="Settings">
+                ⚙️
+            </button>
+            <button class="tab-button new-tab" title="New Session" aria-label="New Session">
+                +
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Tab Bar -->
+            <div class="tab-bar">
+                <div class="tab active" data-tab-id="tab-1">
+                    <span class="tab-title">Research: React Patterns</span>
+                    <span class="tab-type">agent</span>
+                    <div class="tab-close" aria-label="Close tab">×</div>
+                </div>
+                <div class="tab" data-tab-id="tab-2">
+                    <span class="tab-title">Terminal</span>
+                    <span class="tab-type">terminal</span>
+                    <div class="tab-close" aria-label="Close tab">×</div>
+                </div>
+                <div class="tab" data-tab-id="tab-3">
+                    <span class="tab-title">Browser</span>
+                    <span class="tab-type">browser</span>
+                    <div class="tab-close" aria-label="Close tab">×</div>
+                </div>
+            </div>
+
+            <!-- Tab Content Area -->
+            <div class="tab-content">
+                <!-- Tab Panel 1: Research Session (Agent Output) -->
+                <div class="tab-panel active" id="tab-1-panel">
+                    <div class="welcome-screen">
+                        <h2>Agent Research Session</h2>
+                        <p>This tab shows the output from a research sub-agent investigating React state management patterns.</p>
+
+                        <div class="agent-output">
+                            <h4>Task: Research React State Management</h4>
+                            <p><strong>Agent:</strong> Research Specialist</p>
+                            <p><strong>Model:</strong> OpenRouter - anthropic/claude-3-sonnet</p>
+                            <p><strong>Components Used:</strong> browser (3 requests)</p>
+                        </div>
+
+                        <div class="agent-output">
+                            <h4>Findings:</h4>
+                            <pre>
+🔍 Research Complete
+
+Key Findings on React State Management:
+
+1. useState vs useReducer
+   - useState: Simple state, primitive values or simple objects
+   - useReducer: Complex state logic, multiple sub-values, complex state transitions
+
+2. Context API Guidelines
+   - Avoid creating too many contexts
+   - Separate concerns: auth context, theme context, etc.
+   - Consider performance implications of context consumers
+
+3. State Management Libraries
+   - Redux Toolkit: Recommended for complex applications
+   - Zustand: Lightweight alternative with minimal boilerplate
+   - Recoil: Good for atom-based state distribution
+
+4. Best Practices
+   - Normalize state shape
+   - Keep state as flat as possible
+   - Use immutable update patterns
+   - Separate UI state from data state
+
+📊 Research Metrics:
+   - Duration: 2m 14s
+   - Tokens used: 8,450
+   - Browser requests: 3
+   - Sources consulted: 12
+                            </pre>
+                        </div>
+
+                        <div class="welcome-screen">
+                            <h2>Next Steps</h2>
+                            <p>Based on this research, the agent suggests:</p>
+                            <button class="btn">Implement State Management</button>
+                            <button class="btn">Create Component Library</button>
+                            <button class="btn">Write Documentation</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Panel 2: Terminal Component -->
+                <div class="tab-panel" id="tab-2-panel">
+                    <div class="terminal-output">
+Welcome to Agent OS Terminal v0.1.0
+Type 'help' for available commands
+
+> ls -la
+total 48
+drwxr-xr-x  12 agent  staff   384B Aug 28 11:00 .
+drwxr-xr-x   3 root  wheel    96B Aug 28 10:50 ..
+-rw-r--r--   1 agent  staff   1.2K Aug 28 10:55 CLAUDE.md
+-rw-r--r--   1 agent  staff    47B Aug 28 09:00 README.md
+drwxr-xr-x   8 agent  staff   256B Aug 28 10:55 docs
+drwxr-xr-x   3 agent  staff    96B Aug 28 10:50 research
+> pwd
+/Users/agent/projects/agent-os
+> git status
+On branch main
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	prototype-ui-session.html
+
+nothing added to commit but untracked files present (use "git add" to track)
+
+> echo "Hello Agent OS"
+Hello Agent OS
+                    </div>
+                    <div class="terminal-input">
+                        <input type="text" placeholder="Enter command..." aria-label="Terminal input">
+                        <button>Enter</button>
+                    </div>
+                </div>
+
+                <!-- Tab Panel 3: Browser Component -->
+                <div class="tab-panel" id="tab-3-panel">
+                    <iframe class="browser-frame" src="about:blank" title="Browser Component"></iframe>
+                    <div style="padding: 10px; text-align: center; color: #888;">
+                        Browser component ready. Navigate to a URL to begin.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div>Agent OS v0.1.0 • Main • ● Connected</div>
+                <div>Memory: 45%</div>
+                <div>CPU: 12%</div>
+                <div>Session: 01:23:45</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Task Button (Floating Action Button) -->
+    <button class="new-task-btn" title="New Task" aria-label="New Task">
+        +
+    </button>
+
+    <script>
+        // Tab switching logic
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs and panels
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+                // Add active class to clicked tab
+                tab.classList.add('active');
+
+                // Show corresponding panel
+                const tabId = tab.dataset.tabId;
+                const panel = document.getElementById(`${tabId}-panel`);
+                if (panel) {
+                    panel.classList.add('active');
+                }
+            });
+        });
+
+        // Tab close logic
+        document.querySelectorAll('.tab-close').forEach(closeBtn => {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent tab activation
+                const tab = closeBtn.closest('.tab');
+                const tabId = tab.dataset.tabId;
+
+                // Remove tab and panel
+                tab.remove();
+                const panel = document.getElementById(`${tabId}-panel`);
+                if (panel) panel.remove();
+
+                // Activate first tab if none active, or previous tab
+                const activeTab = document.querySelector('.tab.active');
+                if (!activeTab) {
+                    const firstTab = document.querySelector('.tab');
+                    if (firstTab) {
+                        firstTab.classList.add('active');
+                        const firstPanel = document.getElementById(`${firstTab.dataset.tabId}-panel`);
+                        if (firstPanel) firstPanel.classList.add('active');
+                    }
+                }
+            });
+        });
+
+        // New tab button in sidebar
+        document.querySelector('.sidebar .tab-button.new-tab').addEventListener('click', () => {
+            const tabCount = document.querySelectorAll('.tab:not(.new-tab)').length + 1;
+            const newTabId = `tab-${tabCount}`;
+
+            // Add new tab to tab bar
+            const tabBar = document.querySelector('.tab-bar');
+            const newTab = document.createElement('div');
+            newTab.className = 'tab active';
+            newTab.dataset.tabId = newTabId;
+            newTab.innerHTML = `
+                <span class="tab-title">New Task</span>
+                <span class="tab-type">agent</span>
+                <div class="tab-close" aria-label="Close tab">×</div>
+            `;
+
+            // Insert before the new tab button in tab bar
+            const newTabButton = document.querySelector('.tab-bar').lastElementChild; // Assuming last child is new tab button equivalent
+            tabBar.insertBefore(newTab, tabBar.lastElementChild);
+
+            // Add new tab panel
+            const tabContent = document.querySelector('.tab-content');
+            const newPanel = document.createElement('div');
+            newPanel.className = 'tab-panel active';
+            newPanel.id = `${newTabId}-panel`;
+            newPanel.innerHTML = `
+                <div class="welcome-screen">
+                    <h2>New Task Session</h2>
+                    <p>This tab is ready for a new task.</p>
+                    <div class="agent-output">
+                        <h4>Ready for Task Assignment</h4>
+                        <p>Awaiting task description from master agent...</p>
+                    </div>
+                    <button class="btn" style="margin: 10px 5px;">Start Research</button>
+                    <button class="btn" style="margin: 10px 5px;">Open Terminal</button>
+                    <button class="btn" style="margin: 10px 5px;">Open Browser</button>
+                </div>
+            `;
+            tabContent.appendChild(newPanel);
+
+            // Update all tabs to remove active class, then activate new tab
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            newTab.classList.add('active');
+            newPanel.classList.add('active');
+        });
+
+        // New task FAB
+        document.querySelector('.new-task-btn').addEventListener('click', () => {
+            // Click the new tab button in sidebar
+            document.querySelector('.sidebar .tab-button.new-tab').click();
+        });
+
+        // Handle terminal input (basic simulation)
+        document.querySelector('.terminal-input button').addEventListener('click', () => {
+            const input = document.querySelector('.terminal-input input');
+            const command = input.value.trim();
+            if (command) {
+                const output = document.querySelector('.terminal-output');
+                output.value += `\n> ${command}\n`;
+
+                // Simulate command output
+                setTimeout(() => {
+                    if (command === 'help') {
+                        output.value += `Available commands:
+  ls [path]     - List directory contents
+  pwd           - Print working directory
+  git status    - Show git status
+  echo [text]   - Print text
+  clear         - Clear terminal
+  exit          - Exit session\n`;
+                    } else if (command.startsWith('ls')) {
+                        output.value += `total 48
+drwxr-xr-x  12 agent  staff   384B Aug 28 11:00 .
+drwxr-xr-x   3 root  wheel    96B Aug 28 10:50 ..
+-rw-r--r--   1 agent  staff   1.2K Aug 28 10:55 CLAUDE.md
+-rw-r--r--   1 agent  staff    47B Aug 28 09:00 README.md
+drwxr-xr-x   8 agent  staff   256B Aug 28 10:55 docs
+drwxr-xr-x   3 agent  staff    96B Aug 28 10:50 research\n`;
+                    } else if (command === 'pwd') {
+                        output.value += `/Users/agent/projects/agent-os\n`;
+                    } else if (command === 'git status') {
+                        output.value += `On branch main
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	prototype-ui-session.html
+
+nothing added to commit but untracked files present (use "git add" to track)\n`;
+                    } else if (command === 'clear') {
+                        output.value = 'Welcome to Agent OS Terminal v0.1.0\nType "help" for available commands\n\n>';
+                    } else {
+                        output.value += `echo: ${command}: command not found\n`;
+                    }
+
+                    // Scroll to bottom
+                    output.scrollTop = output.scrollHeight;
+                }, 100);
+
+                input.value = '';
+            }
+        });
+
+        // Allow Enter key in terminal input
+        document.querySelector('.terminal-input input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.querySelector('.terminal-input button').click();
+            }
+        });
+    </script>
+</body>
+</html>
