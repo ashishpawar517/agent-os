@@ -6,8 +6,9 @@
 // In production, the built files will be served
 
 import { serve } from "bun";
+import { setupTerminalWebSocket } from "./terminal";
 
-// Simple static file server for development
+// Simple static file server for development with WebSocket support
 const port = 1420;
 
 const server = serve({
@@ -30,7 +31,21 @@ const server = serve({
       // If file not found, return 404
       return new Response("Not Found", { status: 404 });
     }
+  },
+  // WebSocket upgrade handler
+  upgrade(req) {
+    // Check if this is a WebSocket upgrade request to our terminal endpoint
+    if (req.url === "/ws/terminal") {
+      // This will be handled by our setupTerminalWebSocket function
+      // We need to pass the upgrade request to it
+      return setupTerminalWebSocketUpgrade(req);
+    }
+    // For all other requests, don't upgrade
+    return undefined;
   }
 });
 
 console.log(`Server running at http://localhost:${port}`);
+console.log(`Terminal WebSocket available at ws://localhost:${port}/ws/terminal`);
+
+// We need to modify setupTerminalWebSocket to work with the upgrade handler
