@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Review hook triggered - checking if this was a review command...'\nif [[ \"${tool_input.command}\" == *\"review\"* ]] || [[ \"${tool_input.command}\" == *\"code-review\"* ]]; then\n  echo \"Review command detected: ${tool_input.command}\"\n  # Get current PR number if in a GitHub repo\n  if gh pr status >/dev/null 2>&1; then\n    PR_NUMBER=$(gh pr view --json number -q '.number' 2>/dev/null)\n    if [ -n \"$PR_NUMBER\" ] && [ \"$PR_NUMBER\" != \"null\" ]; then\n      echo \"Posting review findings to PR #$PR_NUMBER\"\n      # Here you would add your actual review findings\n      # For now, we'll post a placeholder\n      gh pr comment $PR_NUMBER --body \"🤖 **Code Review Completed**\n\nReview findings have been generated. Please check the review output above for details.\"\n    else\n      echo \"No active PR found or not in GitHub repo\"\n    fi\n  else\n    echo \"GitHub CLI not available or not in a GitHub repository\"\n  fi\nfi",
+            "timeout": 30,
+            "statusMessage": "Processing review findings..."
+          }
+        ]
+      }
+    ]
+  }
+}

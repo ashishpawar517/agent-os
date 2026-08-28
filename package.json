@@ -1,0 +1,19 @@
+{
+  "name": "agent-os",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run src/main.ts",
+    "build": "bun build src/main.ts --outdir ./dist",
+    "tauri:dev": "tauri dev"
+  },
+  "devDependencies": {
+    "@tauri-apps/api": "^2.6.3",
+    "@tauri-apps/cli": "^2.6.3",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^7"
+  }
+}
