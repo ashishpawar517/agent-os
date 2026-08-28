@@ -1,0 +1,134 @@
+{
+  "$schema": "https://tauri.dev/json/tauri-config-schema.json",
+  "productName": "Agent OS",
+  "version": "0.1.0",
+  "identifier": "com.agentos.app",
+  "build": {
+    "beforeDevCommand": "bun dev",
+    "beforeBuildCommand": "bun build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
+  },
+  "packages": [
+    {
+      "patterns": [
+        "node_modules/**/*",
+        "build/**/*",
+        "src/**/*"
+      ]
+    }
+  ],
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": false,
+        "open": true
+      },
+      "window": {
+        "all": true,
+        "create": true,
+        "close": true,
+        "hide": true,
+        "show": true,
+        "maximize": true,
+        "minimize": true,
+        "startDragging": true
+      },
+      "dialog": {
+        "all": true,
+        "ask": true,
+        "confirm": true,
+        "message": true,
+        "notification": true,
+        "open": true,
+        "save": true
+      },
+      "fs": {
+        "all": true,
+        "readFile": true,
+        "writeFile": true,
+        "createDir": true,
+        "copyFile": true,
+        "removeFile": true,
+        "removeDir": true,
+        "exists": true,
+        "readDir": true
+      },
+      "http": {
+        "all": true,
+        "request": true,
+        "get": true,
+        "post": true,
+        "put": true,
+        "delete": true
+      },
+      "notification": {
+        "all": true
+      },
+      "os": {
+        "all": true,
+        "release": true,
+        "version": true
+      },
+      "path": {
+        "all": true,
+        "appDir": true,
+        "audioDir": true,
+        "cacheDir": true,
+        "configDir": true,
+        "desktopDir": true,
+        "documentDir": true,
+        "downloadDir": true,
+        "driverDir": true,
+        "pictureDir": true,
+        "publicDir": true,
+        "resourceDir": true,
+        "tempDir": true,
+        "videoDir": true
+      },
+      "process": {
+        "all": true,
+        "exit": true,
+        "relaunch": true,
+        "current": true,
+        "parent": true,
+        "iter": true,
+        "signal": true,
+        "startDetached": true
+      },
+      "clipboard": {
+        "all": true,
+        "readText": true,
+        "writeText": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "identifier": "com.agentos.app",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/256x256.png",
+        "icons/512x512.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ]
+    },
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "resizable": true,
+        "title": "Agent OS",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600
+      }
+    ]
+  }
+}
