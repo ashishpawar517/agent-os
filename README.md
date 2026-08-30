@@ -115,13 +115,13 @@ agent-os/
 Based on the specification tickets:
 
 1. ✅ **Ticket 1**: Project Setup and Basic Tauri + Bun Structure
-2. 🔲 **Ticket 2**: Implement provider abstraction (OpenRouter/NIM wrapper)
-3. 🔲 **Ticket 3**: Implement component interface and registry system
-4. 🔲 **Ticket 4**: Implement terminal component with Bun PTY + xterm.js
-5. 🔲 **Ticket 5**: Implement browser component with Tauri WebviewWindow
-6. 🔲 **Ticket 6**: Implement permission/security system
-7. 🔲 **Ticket 7**: Implement agent orchestration model
-8. 🔲 **Ticket 8**: Implement UI/session model with tabbed interface
+2. ✅ **Ticket 2**: Implement provider abstraction (OpenRouter/NIM wrapper)
+3. ✅ **Ticket 3**: Implement component interface and registry system
+4. ✅ **Ticket 4**: Implement terminal component with Bun PTY + xterm.js
+5. ✅ **Ticket 5**: Implement browser component with Tauri WebviewWindow
+6. ✅ **Ticket 6**: Implement permission/security system
+7. ✅ **Ticket 7**: Implement agent orchestration model
+8. ✅ **Ticket 8**: Implement UI/session model with tabbed interface
 
 ## Key Design Decisions
 
